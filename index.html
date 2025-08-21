@@ -1,143 +1,87 @@
+
 <!DOCTYPE html>
 <html lang="uk">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>AR Камера з Відео</title>
+  <title>AR Камера</title>
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
   <style>
-    body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; background: #000; }
-
-    /* Стартова кнопка */
-    #startBtn {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      background: #4CAF50;
-      color: white;
-      font-size: 2em;
-      padding: 20px 40px;
-      border: none;
-      border-radius: 40px;
-      cursor: pointer;
-      z-index: 20;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    html, body {
+      margin: 0;
+      overflow: hidden;
+      height: 100%;
+      touch-action: none; /* блокує pinch zoom */
+      font-family: Arial, sans-serif;
     }
-    #startBtn:hover { background: #45a049; }
 
-    /* Текст підказки */
+    a-scene { width: 100vw; height: 100vh; }
+
+    /* Текст у центрі */
     #scanText {
-      position: absolute;
-      top: 40%;
+      position: fixed;
+      top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
       color: #FFD700;
-      font-size: 2.2em; /* ще більший для 7 років */
+      font-size: 2em; /* великий розмір для дітей */
       font-weight: bold;
-      text-shadow: 2px 2px 5px #000;
-      opacity: 0.95;
+      text-shadow: 2px 2px 6px #000;
       z-index: 10;
       text-align: center;
-      animation: pulse 1.5s infinite;
-      display: none; /* схований поки не старт */
-    }
-    @keyframes pulse {
-      0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-      50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.8; }
-      100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      width: 90%;
     }
 
-    /* Кнопка SmartLessa */
+    /* Кнопка YouTube */
     #smartLessaBtn {
-      position: absolute;
+      position: fixed;
       bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
-      background: #FF4081;
+      background: #ff0044;
       color: white;
-      border: none;
-      padding: 12px 20px;
-      font-size: 1.2em;
+      padding: 14px 24px;
       border-radius: 30px;
-      cursor: pointer;
-      z-index: 15;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-      transition: background 0.3s ease;
-      display: none; /* з’являється після старту */
+      font-size: 1.1em;
+      font-weight: bold;
+      text-decoration: none;
+      z-index: 10;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
     }
-    #smartLessaBtn:hover { background: #E91E63; }
 
-    a-scene { width: 100vw; height: 100vh; display: none; }
+    #smartLessaBtn:hover {
+      background: #cc0036;
+    }
   </style>
 </head>
 <body>
-  <button id="startBtn">Почати</button>
   <div id="scanText">Наведи на зображення</div>
-  <button id="smartLessaBtn">@SmartLessa</button>
-
-  <!-- Сховане відео -->
-  <video id="myVideo" src="ar-video.mp4" crossorigin="anonymous" playsinline webkit-playsinline style="display:none"></video>
 
   <a-scene embedded id="arScene" arjs="sourceType: webcam; detectionMode: mono; trackingMethod: best;">
     <a-marker id="marker" type="pattern" url="marker.patt">
-      <a-video id="arVideo" src="#myVideo" width="1" height="1" position="0 0 0" rotation="-90 0 0"></a-video>
+      <a-video id="arVideo" src="ar-video.mp4" width="1" height="1" position="0 0 0" rotation="-90 0 0"></a-video>
     </a-marker>
     <a-entity camera></a-entity>
   </a-scene>
 
+  <!-- Кнопка -->
+  <a href="https://youtube.com/playlist?list=PL6UDFwT9TzFxsVdFiEBsQ9yFpcYRPOpfO&si=IyXv1SkdPyvhcW7Z"
+     id="smartLessaBtn" target="_blank">@SmartLessa</a>
+
   <script>
-    const startBtn = document.getElementById('startBtn');
-    const scanText = document.getElementById('scanText');
-    const smartLessaBtn = document.getElementById('smartLessaBtn');
-    const videoElement = document.getElementById('myVideo');
     const marker = document.getElementById('marker');
-    const arScene = document.getElementById('arScene');
+    const scanText = document.getElementById('scanText');
+    const video = document.getElementById('arVideo');
 
-    // Кнопка на YouTube
-    smartLessaBtn.addEventListener('click', () => {
-      window.open("https://youtube.com/playlist?list=PL6UDFwT9TzFxsVdFiEBsQ9yFpcYRPOpfO&si=IyXv1SkdPyvhcW7Z", "_blank");
-    });
-
-    // Запуск сцени після натискання
-    startBtn.addEventListener('click', async () => {
-      startBtn.style.display = 'none';
-      scanText.style.display = 'block';
-      arScene.style.display = 'block';
-      smartLessaBtn.style.display = 'block';
-
-      // Оптимізація камери
-      const constraints = {
-        video: {
-          facingMode: { exact: "environment" }, // задня камера
-          width: { ideal: 640, max: 1280 },
-          height: { ideal: 480, max: 720 },
-          frameRate: { ideal: 30 },
-          noiseSuppression: true
-        }
-      };
-
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        console.log('Камера запущена:', stream.getVideoTracks()[0].label);
-      } catch (err) {
-        console.error('Помилка доступу до камери:', err);
-      }
-    });
-
-    // Коли маркер знайдено
     marker.addEventListener('markerFound', () => {
       scanText.style.display = 'none';
-      videoElement.currentTime = 0;
-      videoElement.muted = false;
-      videoElement.play().catch(err => console.log("Автозапуск заблоковано:", err));
+      video.play();
     });
 
-    // Коли маркер втрачено
     marker.addEventListener('markerLost', () => {
       scanText.style.display = 'block';
-      videoElement.pause();
-      videoElement.muted = true;
+      video.pause();
     });
   </script>
 </body>
